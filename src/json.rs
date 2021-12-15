@@ -1,6 +1,7 @@
 #![allow(dead_code)]
-use std::str::FromStr;
+use std::{str::FromStr, fmt::Display};
 
+#[derive(Debug, PartialEq)]
 pub struct JsonNumber {
     pub(crate) integer: i128,
     pub(crate) frac: f64,
@@ -140,15 +141,15 @@ impl<T> From<(String, T)> for JsonValue where T: Into<JsonValue> {
     }
 }
 
-impl ToString for JsonValue {
-    fn to_string(&self) -> String {
+impl Display for JsonValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Number(n) => n.to_string(),
-            Self::String(s) => format!("\"{}\"", s),
-            Self::Objects(o) => format!("{{{}}}", o.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",")),
-            Self::Boolean(b) => b.to_string(),
-            Self::Array(a) => format!("[{}]", a.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",")),
-            Self::Null => String::from("null"),
+            Self::Number(n) => write!(f, "{}", n),
+            Self::String(s) => write!(f, "\"{}\"", s),
+            Self::Objects(o) => write!(f, "{{{}}}", o.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",")),
+            Self::Boolean(b) => write!(f, "{}", b),
+            Self::Array(a) => write!(f, "[{}]", a.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",")),
+            Self::Null => write!(f, "null"),
         }
     }
 }
@@ -192,8 +193,8 @@ impl<T> From<(String, T)> for JsonObject where T: Into<JsonValue> {
     }
 }
 
-impl ToString for JsonObject {
-    fn to_string(&self) -> String {
-        format!("\"{}\":{}", self.name, self.value.to_string())
+impl Display for JsonObject {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "\"{}\":{}", self.name, self.value.to_string())
     }
 }
