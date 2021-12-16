@@ -1,6 +1,8 @@
 #![allow(dead_code)]
 use std::{str::FromStr, fmt::Display};
 
+use crate::error::{JsonParseError, ParseErrorKind};
+
 #[derive(Debug, PartialEq)]
 pub struct JsonNumber {
     pub(crate) integer: i128,
@@ -155,7 +157,7 @@ impl Display for JsonValue {
 }
 
 impl FromStr for JsonValue {
-    type Err = crate::parser::JsonParseError;
+    type Err = crate::error::JsonParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let tokens = crate::lexer::JsonLexer::new(s).tokenize();
         match tokens {
@@ -163,7 +165,7 @@ impl FromStr for JsonValue {
                 return crate::parser::JsonParser::new(tokens).get_value();
             },
             Err(e) => {
-                return Err(crate::parser::JsonParseError::new(format!("lexer error: \"{}\"",e.message)));
+                return Err( JsonParseError { kind: ParseErrorKind::LexError(e)});
             }
         }
     }

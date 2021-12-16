@@ -1,22 +1,6 @@
 use crate::json::{JsonValue, JsonObject};
+use crate::error::{JsonParseError, ParseErrorKind};
 use crate::lexer::*;
-
-#[derive(Debug)]
-pub struct JsonParseError {
-    pub(crate) message : String
-}
-
-impl JsonParseError {
-    pub fn new(message : String) -> JsonParseError {
-        JsonParseError { message }
-    }
-}
-
-impl ToString for JsonParseError {
-    fn to_string(&self) -> String {
-        self.message.to_owned()
-    }
-}
 
 pub struct JsonParser {
     tokens : Vec<JsonToken>,
@@ -65,7 +49,7 @@ impl JsonParser {
                                 utf16.clear();
                             },
                             Err(e) => {
-                                return Err(JsonParseError::new(e.to_string()));
+                                return Err( JsonParseError{ kind: ParseErrorKind::FromUtf16Error(e)});
                             }
                         }
                     } 
@@ -82,7 +66,7 @@ impl JsonParser {
                     buf.push_str(&utf16_str);
                 },
                 Err(e) => {
-                    return Err(JsonParseError::new(e.to_string()));
+                    return Err( JsonParseError{ kind: ParseErrorKind::FromUtf16Error(e)});
                 }
             }
         }
@@ -95,12 +79,12 @@ impl JsonParser {
             if ret.is_none() {
                 ret = Some(value);
             } else {
-                return Err(JsonParseError::new(format!("invalid JSON format. JSON must contain only one value. fount {:?}", value)));
+                return Err( JsonParseError{ kind: ParseErrorKind::InvalidToken} );
             }
         }
         match ret {
             Some(v) => Ok(v),
-            None => Err(JsonParseError::new("invalid JSON format".to_string()))
+            None => Err( JsonParseError{ kind: ParseErrorKind::InvalidToken} )
         }
     }
 
@@ -137,7 +121,7 @@ impl JsonParser {
                                             return Ok(Some(JsonValue::Objects(objects)));
                                         },
                                         _ => {
-                                            return Err(JsonParseError::new(format!("error: invalid token {:?}, expect whitespace, value-separator or end-object\nobjects: {:?}", token, objects)));
+                                            return Err( JsonParseError{ kind: ParseErrorKind::InvalidToken} );
                                         }
                                     }
                                 }
@@ -180,15 +164,15 @@ impl JsonParser {
                                             if let Some(value) = self.next_value()? {
                                                 values.push(value);
                                             } else {
-                                                return Err(JsonParseError::new("error: not found next value.".to_string()));
+                                                return Err( JsonParseError{ kind: ParseErrorKind::NonValue} );
                                             }
                                         },
                                         _ => {
-                                            return Err(JsonParseError::new(format!("error: could not parse array. invalid token {:?}", token)));
+                                            return Err( JsonParseError{ kind: ParseErrorKind::InvalidToken} );
                                         }
                                     }
                                 }
-                                return Err(JsonParseError::new("error: could not find end of array(']')".to_string()));
+                                return Err( JsonParseError{ kind: ParseErrorKind::NonEndArray} );
                             }
                         }
                     }
@@ -206,7 +190,7 @@ impl JsonParser {
                             return Ok(Some(JsonValue::Number(v)));
                         },
                         Err(e) => {
-                            return Err(JsonParseError::new(e.to_string()));
+                            return Err(JsonParseError{ kind: ParseErrorKind::ParseFloatError(e)});
                         }
                     }
                 },
@@ -223,7 +207,7 @@ impl JsonParser {
                     return JsonParser::token_to_string(s); 
                 },
                 _ => {
-                    return Err(JsonParseError::new(format!("error: invalid token {:?}, could not get value.", token)));
+                    return Err(JsonParseError{ kind: ParseErrorKind::InvalidToken}); 
                 }
             }
         }
@@ -251,15 +235,15 @@ impl JsonParser {
                                     return Ok(JsonObject::new(&key, self.next_value()?));
                                 },
                                 _ => {
-                                    return Err(JsonParseError::new(format!("error: invalid token :{:?}, expect whitespace or name-separator(',')", token)));
+                                    return Err(JsonParseError{ kind: ParseErrorKind::InvalidToken}); 
                                 },
                             }
                         }
                     }
-                    return Err(JsonParseError::new("error: could not find any object name.".to_string()));
+                    return Err(JsonParseError{ kind: ParseErrorKind::NoObjectName}); 
                 },
                 _ => {
-                    return Err(JsonParseError::new(format!("error: invalid token {:?}, expect whitespace or string", token)));
+                    return Err(JsonParseError{ kind: ParseErrorKind::InvalidToken}); 
                 }
             }
         }

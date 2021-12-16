@@ -1,4 +1,5 @@
 pub mod json;
+mod error;
 mod parser;
 mod lexer;
 
@@ -12,7 +13,7 @@ fn tokenize_null() {
             assert!(v.iter().eq(tokens.tokens.iter()), "{:?}", tokens.tokens);
         },
         Err(e) => {
-            panic!("{}", e.message);
+            panic!("{}", e);
         }
     }
 }

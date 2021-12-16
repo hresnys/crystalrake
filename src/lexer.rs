@@ -1,4 +1,4 @@
-#![allow(dead_code)]
+use crate::error::{ JsonLexerError, LexErrorKind };
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum JsonCharToken {
@@ -14,27 +14,27 @@ pub struct JsonNumberToken {
     frac: String,
     exp: String
 }
-use crate::{json::JsonNumber, parser::JsonParseError};
-impl JsonNumberToken {
-    
-    pub fn to_jsonvalue(&self) -> Result<JsonNumber, JsonParseError> {
-        let integer : i128 = match self.integer.parse() {
-            Ok(i) => i,
-            Err(e) => { return Err(JsonParseError::new(e.to_string())); }
-        };
 
-        let frac = match self.frac.parse::<f64>() {
-            Ok(i) => i,
-            Err(e) => { return Err(JsonParseError::new(e.to_string())); }
-        };
+// use crate::{json::JsonNumber, error::JsonParseError};
+// impl JsonNumberToken {
+//     pub fn to_jsonvalue(&self) -> Result<JsonNumber, JsonParseError> {
+//         let integer : i128 = match self.integer.parse() {
+//             Ok(i) => i,
+//             Err(e) => { return Err(JsonParseError::new(e.to_string())); }
+//         };
 
-        let exp = match self.exp.parse::<i128>() {
-            Ok(i) => i,
-            Err(e) => { return Err(JsonParseError::new(e.to_string())); }
-        };
-        Ok(JsonNumber { integer, frac, exp })
-    }
-}
+//         let frac = match self.frac.parse::<f64>() {
+//             Ok(i) => i,
+//             Err(e) => { return Err(JsonParseError::new(e.to_string())); }
+//         };
+
+//         let exp = match self.exp.parse::<i128>() {
+//             Ok(i) => i,
+//             Err(e) => { return Err(JsonParseError::new(e.to_string())); }
+//         };
+//         Ok(JsonNumber { integer, frac, exp })
+//     }
+// }
 
 impl ToString for JsonNumberToken {
     fn to_string(&self) -> String {
@@ -78,7 +78,7 @@ pub enum JsonToken {
     True,
     False,
     Null,
-    QuotationMark,
+    //QuotationMark,
     String(Vec<JsonCharToken>)
 }
 
@@ -88,17 +88,17 @@ pub struct JsonTokens {
 }
 
 impl JsonTokens {
-    pub fn ignore_whitespace(self) -> JsonTokens {
-        let mut tokens = Vec::with_capacity(self.tokens.len());
-        for token in self.tokens {
-            match token {
-                JsonToken::WhiteSpace(_) => {},
-                _ => tokens.push(token),
-            }
+    // pub fn ignore_whitespace(self) -> JsonTokens {
+    //     let mut tokens = Vec::with_capacity(self.tokens.len());
+    //     for token in self.tokens {
+    //         match token {
+    //             JsonToken::WhiteSpace(_) => {},
+    //             _ => tokens.push(token),
+    //         }
             
-        }
-        JsonTokens { tokens }
-    }
+    //     }
+    //     JsonTokens { tokens }
+    // }
 }
 
 impl IntoIterator for JsonTokens {
@@ -108,17 +108,6 @@ impl IntoIterator for JsonTokens {
 
     fn into_iter(self) -> Self::IntoIter {
         self.tokens.into_iter()
-    }
-}
-
-#[derive(Debug)]
-pub struct JsonLexerError {
-    pub(crate) message: String
-}
-
-impl JsonLexerError {
-    pub fn new(message : String) -> JsonLexerError {
-        JsonLexerError { message }
     }
 }
 
@@ -132,7 +121,6 @@ impl JsonLexer<'_> {
     }
     
     pub fn tokenize(&mut self) -> Result<JsonTokens, JsonLexerError> {
-        
         let mut tokens = Vec::new();
         
         while let Some(token) = self.next_token()? {
@@ -157,7 +145,7 @@ impl JsonLexer<'_> {
                             tokens.push(token);
                         }
                     } else {
-                        return Err(JsonLexerError::new("error: invalid token".to_string()));
+                        return Err(JsonLexerError { kind: LexErrorKind::NotDigit });
                     }
                     
                 },
@@ -220,25 +208,25 @@ impl JsonLexer<'_> {
                     if self.json_chars.by_ref().take(4).eq(['t','r','u','e']) {
                         Ok(Some(JsonToken::True))
                     } else {
-                        Err(JsonLexerError::new("error: found invalid value, expect \"true\"".to_string()))
+                        Err(JsonLexerError { kind: LexErrorKind::InvalidChar(c) })
                     }
                 },
                 'f' => {
                     if self.json_chars.by_ref().take(5).eq(['f','a','l','s','e']) {
                         Ok(Some(JsonToken::False))
                     } else {
-                        Err(JsonLexerError::new("error: found invalid value, expect \"false\"".to_string()))
+                        Err(JsonLexerError { kind: LexErrorKind::InvalidChar(c) })
                     }
                 },
                 'n' => {
                     if self.json_chars.by_ref().take(4).eq(['n','u','l','l']) {
                         Ok(Some(JsonToken::Null))
                     } else {
-                        Err(JsonLexerError::new("error: found invalid value, expect \"null\"".to_string()))
+                        Err(JsonLexerError { kind: LexErrorKind::InvalidChar(c) })
                     }
                 },
                 _ => {
-                    Err(JsonLexerError::new(format!("error: found invalid value '{}'", c as char)))
+                    Err(JsonLexerError { kind: LexErrorKind::InvalidChar(c) })
                 }
             },
             None => {
@@ -273,25 +261,25 @@ impl JsonLexer<'_> {
                                             chars.push(JsonCharToken::Unicode(code));
                                         },
                                         Err(e) => {
-                                            return Err(JsonLexerError::new(e.to_string()));
+                                            return Err( JsonLexerError {kind: LexErrorKind::ParseError(e) });
                                         }
                                     }
                                      
                                 }
-                                _ => return Err(JsonLexerError::new(format!("error: invalid char {}", c))),
+                                _ => return Err(JsonLexerError { kind: LexErrorKind::InvalidChar(c) }),
                             }
                         },
                         None => {
-                            return Err(JsonLexerError::new("error: end ob file, expect any escape char".to_string()));
+                            return Err(JsonLexerError { kind: LexErrorKind::NonQuotationMark });
                         }
                     } 
                 },
                 _ => {
-                    return Err(JsonLexerError::new(format!("error: invalid char {}", c)));
+                    return Err(JsonLexerError { kind: LexErrorKind::InvalidChar(c) });
                 }
             }
         }
-        Err(JsonLexerError::new("error: can not find close quotation-mark".to_string()))
+        Err(JsonLexerError { kind: LexErrorKind::NonQuotationMark })
     }
 
     fn number_token(&mut self, number : &mut JsonNumberToken) -> Result<Option<JsonToken>, JsonLexerError> {
@@ -314,9 +302,7 @@ impl JsonLexer<'_> {
                                         number.exp.push('-');
                                     } else if let Some(JsonToken::Plus) = sign {
                                         number.exp.push('+');
-                                    } else {
-                                        return Err(JsonLexerError::new("error: exponent part must contain plus or minus.".to_string()));
-                                    }
+                                    } 
                                     while let Some(token) = self.next_token()? {
                                         match token {
                                             JsonToken::Digit(d) => number.exp.push(d),
@@ -333,7 +319,7 @@ impl JsonLexer<'_> {
                         }
                         break;
                     } else {
-                        return Err(JsonLexerError::new("error: fraction part must contain one or more digit.".to_string()));
+                        return Err(JsonLexerError { kind: LexErrorKind::NonFracDigit });
                     }
                 },
                 JsonToken::Exponent =>{
@@ -342,9 +328,7 @@ impl JsonLexer<'_> {
                         number.exp.push('-');
                     } else if let Some(JsonToken::Plus) = sign {
                         number.exp.push('+');
-                    } else {
-                        return Err(JsonLexerError::new("error: exponent part must contain plus or minus.".to_string()));
-                    }
+                    } 
                     while let Some(token) = self.next_token()? {
                         match token {
                             JsonToken::Digit(d) => number.exp.push(d),
