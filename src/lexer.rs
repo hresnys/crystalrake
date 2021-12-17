@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::error::{ JsonLexerError, LexErrorKind };
 
 #[derive(Debug, PartialEq, Eq)]
@@ -15,29 +17,8 @@ pub struct JsonNumberToken {
     exp: String
 }
 
-// use crate::{json::JsonNumber, error::JsonParseError};
-// impl JsonNumberToken {
-//     pub fn to_jsonvalue(&self) -> Result<JsonNumber, JsonParseError> {
-//         let integer : i128 = match self.integer.parse() {
-//             Ok(i) => i,
-//             Err(e) => { return Err(JsonParseError::new(e.to_string())); }
-//         };
-
-//         let frac = match self.frac.parse::<f64>() {
-//             Ok(i) => i,
-//             Err(e) => { return Err(JsonParseError::new(e.to_string())); }
-//         };
-
-//         let exp = match self.exp.parse::<i128>() {
-//             Ok(i) => i,
-//             Err(e) => { return Err(JsonParseError::new(e.to_string())); }
-//         };
-//         Ok(JsonNumber { integer, frac, exp })
-//     }
-// }
-
-impl Disp for JsonNumberToken {
-    fn to_string(&self) -> String {
+impl Display for JsonNumberToken {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = String::new();
         if self.is_minus { s.push('-'); }
         s.push_str(&self.integer);
@@ -45,7 +26,7 @@ impl Disp for JsonNumberToken {
         s.push_str(&self.frac);
         if !self.exp.is_empty() {s.push('E'); }
         s.push_str(&self.exp);
-        s
+        write!(f, "{}", s)
     }
 }
 
