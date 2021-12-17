@@ -10,6 +10,11 @@ pub struct JsonNumber {
     pub(crate) exp: i128
 }
 
+pub trait FromJson: Sized {
+    type Err;
+    fn from_json(json: &JsonValue) -> Result<Self, Self::Err>; 
+}
+
 #[derive(Debug, PartialEq)]
 pub enum JsonValue {
     Number(f64),
@@ -70,6 +75,10 @@ impl JsonValue {
         } else {
             false
         }
+    }
+
+    pub fn deserialize<F: FromJson>(&self) -> Result<F, F::Err> {
+        FromJson::from_json(self)
     }
 }
 

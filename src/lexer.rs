@@ -36,7 +36,7 @@ pub struct JsonNumberToken {
 //     }
 // }
 
-impl ToString for JsonNumberToken {
+impl Disp for JsonNumberToken {
     fn to_string(&self) -> String {
         let mut s = String::new();
         if self.is_minus { s.push('-'); }
