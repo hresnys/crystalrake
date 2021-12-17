@@ -114,13 +114,13 @@ impl JsonParser {
                                         JsonToken::ValueSeparator => {
                                             self.next();
                                             objects.push(self.get_object()?);
-                                            
                                         },
                                         JsonToken::EndObject => {
                                             self.next();
                                             return Ok(Some(JsonValue::Objects(objects)));
                                         },
                                         _ => {
+                                            
                                             return Err( JsonParseError{ kind: ParseErrorKind::InvalidToken} );
                                         }
                                     }
@@ -140,6 +140,7 @@ impl JsonParser {
                                 continue;
                             },
                             JsonToken::EndArray => {
+                                self.next();
                                 return Ok(Some(JsonValue::Array(values)));
                             },
                             _ => {

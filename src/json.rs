@@ -58,7 +58,6 @@ impl JsonValue {
     }
 
     pub fn is_null(&self) -> bool {
-        println!("{:?}", self);
         match self {
             JsonValue::Null => true,
             _ => false

@@ -86,6 +86,13 @@ fn nested_empty_object() {
 }
 
 #[test]
+fn nested_empty_array() {
+    let json_value = r#"[ {"empty" : []} ]"#.parse::<JsonValue>().unwrap();
+    let expect_result = JsonValue::Array(vec![JsonValue::Objects(vec![JsonObject::new("empty", JsonValue::Array(Vec::new()))])]);
+    assert_eq!(json_value, expect_result);
+}
+
+#[test]
 fn null_value() {
     let json_value = "null".parse::<JsonValue>();
     if let Ok(v) = json_value {
